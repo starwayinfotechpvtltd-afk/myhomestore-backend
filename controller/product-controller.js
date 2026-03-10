@@ -2,6 +2,7 @@ const Product = require("../module/product-module");
 const uploadToCloudinary = require("../utils/cloudinary");
 const csv = require("csv-parser");
 const fs = require("fs");
+const mongoose=require("mongoose")
 
 
 
@@ -207,6 +208,36 @@ const getProductById = async (req, res) => {
   }
 };
 
+
+const getProductsForCarts = async (req, res) => {
+  try {
+    console.log("BODY:", req.body);
+
+    const { productIds } = req.body;
+
+    console.log("productIds:", productIds);
+
+    if (!Array.isArray(productIds) || productIds.length === 0) {
+      return res.status(400).json({ message: "Invalid productIds" });
+    }
+
+    const products = await Product.find(
+      { _id: { $in: productIds } },
+      "productName supplyInstallPrice productImage category"
+    );
+
+    console.log(products);
+
+    res.status(200).json({ products });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+
 const getProductByTypeAndName = async (req, res) => {
   try {
     const { type, productName } = req.body;
@@ -300,4 +331,5 @@ module.exports = {
   getProductByType,
   getProductByRange,
   deleteProduct,
+  getProductsForCarts
 };

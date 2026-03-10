@@ -129,33 +129,40 @@ const getCartItems = async (req, res) => {
     const isAuthenticated = req.user && req.user._id;
 
     if (isAuthenticated) {
-      const userId = req.user._id;
-      const user = await User.findById(userId).populate("cartProduct.productId");
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
+      const user = await User.findById(req.user._id).populate({
+        path: "cartProduct.productId",
+        select: "name price images category", // pick fields you need
+      });
+
+      if (!user) return res.status(404).json({ message: "User not found" });
+
+      // Shape the data cleanly for frontend
+      const cartItems = user.cartProduct.map((item) => ({
+        productId: item.productId._id,
+        name: item.productId.name,
+        price: item.productId.price,
+        image: item.productId.images?.[0] || "",
+        quantity: item.quantity,
+        totalPrice: item.productId.price * item.quantity,
+      }));
 
       return res.status(200).json({
-        cart: user.cartProduct || [],
-        totalItems: user.cartProduct ? user.cartProduct.length : 0,
+        cart: cartItems,
+        totalItems: cartItems.length,
         isGuest: false,
       });
     }
 
-    // Guest user - return session cart
-    const sessionCart = getSessionCart(req);
-    
-    res.status(200).json({
-      cart: sessionCart,
-      totalItems: sessionCart.length,
-      isGuest: true,
-    });
+    // Guest: session cart (no populate, only productId stored)
+    const sessionCart = req.session.cart || [];
+    res.status(200).json({ cart: sessionCart, totalItems: sessionCart.length, isGuest: true });
+
   } catch (error) {
     console.error("Get cart error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
 
 // Update cart item quantity
 const updateCartItem = async (req, res) => {
@@ -371,4 +378,5 @@ module.exports = {
   clearCart,
   getCartCount,
   mergeGuestCartToUser,
+  mergeCart
 };

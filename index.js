@@ -53,6 +53,10 @@ app.use(
 
 // Route
 app.use("/api", router);
+app.get("/api/test", (req,res)=>{
+ res.send("API working");
+}); 
+
 
 app.listen(PORT, () => {
   console.log("Listening at PORT: ", PORT);

@@ -29,7 +29,7 @@ const productSchema = new Schema(
         public_id: String,
       },
     ],
-    thickness: String,
+    thickness: [String],
     pattern: String,
     color: [String],
     productName: String,

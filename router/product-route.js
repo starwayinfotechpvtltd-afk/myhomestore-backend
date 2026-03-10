@@ -8,6 +8,7 @@ const {
   getProductByType,
   getProductByRange,
   deleteProduct,
+  getProductsForCarts
 } = require("../controller/product-controller");
 const upload = require("../middleware/multer");
 
@@ -22,14 +23,10 @@ productRouter.post(
   uploadProduct,
 );
 
-// router.post(
-//   "/product/adminProductUpload",
-//   upload.field({ name: "csv", maxCount: 1 }),
-//   adminProductUpload,
-// );
 
 productRouter.get("/getallProduct", getAllProduct);
 productRouter.post("/getProductById/:id", getProductById);
+productRouter.post("/getProductForCarts", getProductsForCarts);
 productRouter.post("/getProductbyTypeName", getProductByTypeAndName);
 productRouter.post("/getProductbyType", getProductByType);
 productRouter.post("/getProductbyRange", getProductByRange);
