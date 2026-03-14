@@ -34,7 +34,10 @@ const productSchema = new Schema(
     color: [String],
     productName: String,
     description: String,
-    sku: String,
+    sku: {
+      type: String,
+      unique: true
+    },
     price: String,
     packSize: String,
     dimensions: String,

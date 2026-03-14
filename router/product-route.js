@@ -8,7 +8,8 @@ const {
   getProductByType,
   getProductByRange,
   deleteProduct,
-  getProductsForCarts
+  getProductsForCarts,
+  searchProductName
 } = require("../controller/product-controller");
 const upload = require("../middleware/multer");
 
@@ -30,6 +31,7 @@ productRouter.post("/getProductForCarts", getProductsForCarts);
 productRouter.post("/getProductbyTypeName", getProductByTypeAndName);
 productRouter.post("/getProductbyType", getProductByType);
 productRouter.post("/getProductbyRange", getProductByRange);
+productRouter.post("/search-product", searchProductName);
 productRouter.post("/deleteProduct", deleteProduct);
 
 module.exports = productRouter;

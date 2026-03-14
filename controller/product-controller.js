@@ -284,7 +284,7 @@ const getProductByRange = async (req, res) => {
     const {range}= req.body;
 
     // Filter by range
-    const product = await Product.find({ range });
+    const product = await Product.find({ range});
     // Return response
     return res.status(200).json({
       success: true,
@@ -295,6 +295,26 @@ const getProductByRange = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+
+const searchProductName=async(req, res)=>{
+  try {
+    const {name}=req.body
+    console.log(req.body)
+
+    if(!name){
+      return res.json([])
+    }
+
+    // Find product
+    const product=await Product.find({productName: {$regex: name, $options: "i"}}).limit(10);
+
+    return res.status(200).json(product)
+  } catch (error) {
+    return res.status(500).json({message: "Product not find", status: false})
+  }
+}
+
 
 const deleteProduct = (req, res) => {
   try {
@@ -331,5 +351,6 @@ module.exports = {
   getProductByType,
   getProductByRange,
   deleteProduct,
-  getProductsForCarts
+  getProductsForCarts,
+  searchProductName
 };
