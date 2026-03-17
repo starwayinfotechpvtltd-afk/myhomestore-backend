@@ -24,7 +24,7 @@ const mergeGuestCartToUser = async (userId, guestCart) => {
   // Merge guest cart items with user cart
   guestCart.forEach((guestItem) => {
     const existingItem = user.cartProduct.find(
-      (item) => item.productId.toString() === guestItem.productId.toString()
+      (item) => item.productId.toString() === guestItem.productId.toString(),
     );
 
     if (existingItem) {
@@ -40,11 +40,10 @@ const mergeGuestCartToUser = async (userId, guestCart) => {
   await user.save();
 };
 
-
-
 const addToCart = async (req, res) => {
   try {
-    const { productId, quantity = 1 } = req.body;
+    const { productId, totalMeterSquare, totalPrice, wastage } = req.body;
+    console.log("Wastage", wastage);
     const isAuthenticated = req.user && req.user._id;
 
     if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
@@ -53,7 +52,9 @@ const addToCart = async (req, res) => {
 
     const product = await Product.findById(productId);
     if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Product not found" });
     }
 
     if (isAuthenticated) {
@@ -63,14 +64,26 @@ const addToCart = async (req, res) => {
       if (!user.cartProduct) user.cartProduct = [];
 
       const existing = user.cartProduct.find(
-        (item) => item.productId.toString() === productId
+        (item) =>
+          item.productId.toString() === productId &&
+          item.totalMeterSquare === totalMeterSquare &&
+          item.wastage === wastage,
       );
 
+      console.log("Product in a cart", existing);
+
       if (existing) {
-        existing.quantity += quantity;
+        existing.quantity += totalMeterSquare;
+        existing.price += totalPrice;
       } else {
-        // ✅ Fixed: push to cartProduct, not cart
-        user.cartProduct.push({ productId: product._id, quantity, addedAt: new Date() });
+        // push to cartProduct, not cart
+        user.cart.push({
+          productId: product._id,
+          quantity: totalMeterSquare,
+          price: totalPrice,
+          wastage,
+          addedAt: new Date(),
+        });
       }
 
       await user.save();
@@ -79,11 +92,19 @@ const addToCart = async (req, res) => {
 
     // Guest: session-based fallback (server-side backup, not primary)
     const sessionCart = req.session.cart || [];
-    const existing = sessionCart.find((i) => i.productId.toString() === productId);
+    const existing = sessionCart.find(
+      (i) => i.productId.toString() === productId,
+    );
     if (existing) {
-      existing.quantity += quantity;
+      existing.quantity += totalMeterSquare;
+      existing.price += totalPrice;
     } else {
-      sessionCart.push({ productId: product._id, quantity, addedAt: new Date() });
+      sessionCart.push({
+        productId: product._id,
+        totalMeterSquare,
+        totalPrice,
+        addedAt: new Date(),
+      });
     }
     req.session.cart = sessionCart;
 
@@ -105,23 +126,24 @@ const mergeCart = async (req, res) => {
 
     guestCart.forEach((guestItem) => {
       const existing = user.cartProduct.find(
-        (item) => item.productId.toString() === guestItem.productId.toString()
+        (item) => item.productId.toString() === guestItem.productId.toString(),
       );
       if (existing) {
         existing.quantity += guestItem.quantity;
+        existing.price += guestItem.price;
       } else {
         user.cartProduct.push(guestItem);
       }
     });
 
     await user.save();
-    res.status(200).json({ message: "Cart merged successfully", cart: user.cartProduct });
+    res
+      .status(200)
+      .json({ message: "Cart merged successfully", cart: user.cartProduct });
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
-
 
 // Get cart items
 const getCartItems = async (req, res) => {
@@ -155,14 +177,16 @@ const getCartItems = async (req, res) => {
 
     // Guest: session cart (no populate, only productId stored)
     const sessionCart = req.session.cart || [];
-    res.status(200).json({ cart: sessionCart, totalItems: sessionCart.length, isGuest: true });
-
+    res.status(200).json({
+      cart: sessionCart,
+      totalItems: sessionCart.length,
+      isGuest: true,
+    });
   } catch (error) {
     console.error("Get cart error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
-
 
 // Update cart item quantity
 const updateCartItem = async (req, res) => {
@@ -171,14 +195,14 @@ const updateCartItem = async (req, res) => {
     const isAuthenticated = req.user && req.user._id;
 
     if (!productId || quantity === undefined) {
-      return res.status(400).json({ 
-        message: "Product ID and quantity are required" 
+      return res.status(400).json({
+        message: "Product ID and quantity are required",
       });
     }
 
     if (quantity < 1) {
-      return res.status(400).json({ 
-        message: "Quantity must be at least 1" 
+      return res.status(400).json({
+        message: "Quantity must be at least 1",
       });
     }
 
@@ -190,18 +214,18 @@ const updateCartItem = async (req, res) => {
     if (isAuthenticated) {
       const userId = req.user._id;
       const user = await User.findById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const cartItem = user.cartProduct.find(
-        (item) => item.productId.toString() === productId
+        (item) => item.productId.toString() === productId,
       );
 
       if (!cartItem) {
-        return res.status(404).json({ 
-          message: "Product not found in cart" 
+        return res.status(404).json({
+          message: "Product not found in cart",
         });
       }
 
@@ -220,12 +244,12 @@ const updateCartItem = async (req, res) => {
     // Handle guest users
     const sessionCart = getSessionCart(req);
     const cartItem = sessionCart.find(
-      (item) => item.productId.toString() === productId
+      (item) => item.productId.toString() === productId,
     );
 
     if (!cartItem) {
-      return res.status(404).json({ 
-        message: "Product not found in cart" 
+      return res.status(404).json({
+        message: "Product not found in cart",
       });
     }
 
@@ -247,7 +271,7 @@ const updateCartItem = async (req, res) => {
 // Remove item from cart
 const removeFromCart = async (req, res) => {
   try {
-    const { productId } = req.params;
+    const { productId, quantity, wastage } = req.body;
     const isAuthenticated = req.user && req.user._id;
 
     if (!productId) {
@@ -262,20 +286,24 @@ const removeFromCart = async (req, res) => {
     if (isAuthenticated) {
       const userId = req.user._id;
       const user = await User.findById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
-      user.cartProduct = user.cartProduct.filter(
-        (item) => item.productId.toString() !== productId
+      user.cart = user.cart.filter(
+        (item) =>
+          !(
+            item.productId.toString() === productId &&
+            Number(item.quantity) === Number(quantity) &&
+            Number(item.wastage) === Number(wastage)
+          ),
       );
-
       await user.save();
 
       return res.status(200).json({
         message: "Product removed from cart successfully",
-        cart: user.cartProduct,
+        cart: user.cart,
         isGuest: false,
       });
     }
@@ -283,7 +311,12 @@ const removeFromCart = async (req, res) => {
     // Handle guest users
     let sessionCart = getSessionCart(req);
     sessionCart = sessionCart.filter(
-      (item) => item.productId.toString() !== productId
+      (item) =>
+        !(
+          item.productId.toString() === productId &&
+          Number(item.quantity) === Number(quantity) &&
+          Number(item.wastage) === Number(wastage)
+        ),
     );
     req.session.cart = sessionCart;
 
@@ -298,7 +331,6 @@ const removeFromCart = async (req, res) => {
   }
 };
 
-
 // Clear cart
 const clearCart = async (req, res) => {
   try {
@@ -307,7 +339,7 @@ const clearCart = async (req, res) => {
     if (isAuthenticated) {
       const userId = req.user._id;
       const user = await User.findById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -344,25 +376,25 @@ const getCartCount = async (req, res) => {
     if (isAuthenticated) {
       const userId = req.user._id;
       const user = await User.findById(userId);
-      
+
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
 
       const cartCount = user.cartProduct ? user.cartProduct.length : 0;
 
-      return res.status(200).json({ 
+      return res.status(200).json({
         cartCount,
-        isGuest: false 
+        isGuest: false,
       });
     }
 
     // Guest user
     const sessionCart = getSessionCart(req);
-    
-    res.status(200).json({ 
+
+    res.status(200).json({
       cartCount: sessionCart.length,
-      isGuest: true 
+      isGuest: true,
     });
   } catch (error) {
     console.error("Get cart count error:", error);
@@ -378,5 +410,5 @@ module.exports = {
   clearCart,
   getCartCount,
   mergeGuestCartToUser,
-  mergeCart
+  mergeCart,
 };

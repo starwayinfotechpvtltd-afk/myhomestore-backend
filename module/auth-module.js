@@ -18,7 +18,23 @@ const userSchema = new mongoose.Schema(
     address: String,
     cart: [
       {
-        type: mongoose.Schema.Types.ObjectId,
+        productId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Product",
+          required: true,
+        },
+        quantity: {
+          type: Number,
+          required: true,
+        },
+        price: {
+          type: Number,
+          required: true,
+        },
+        wastage: {
+          type: Number,
+          required: true,
+        },
         addedAt: {
           type: Date,
           default: Date.now,

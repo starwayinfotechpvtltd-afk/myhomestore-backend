@@ -16,7 +16,7 @@ cartRouter.post("/addToCart", addToCart)
 cartRouter.post("/merge", mergeCart); 
 cartRouter.get("/allCart", getCartItems)
 cartRouter.put("/updateCart/:id", updateCartItem)
-cartRouter.delete("/deleteCart/:id", removeFromCart)
+cartRouter.delete("/deleteCart", removeFromCart)
 cartRouter.delete("/clearCart", clearCart)
 cartRouter.get("/count", getCartCount);
 

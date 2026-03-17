@@ -14,7 +14,7 @@ const productSchema = new Schema(
     },
     brand: {
       type: String,
-      require: true,   
+      require: true,
       index: true,
     },
     productImage: [
@@ -36,7 +36,7 @@ const productSchema = new Schema(
     description: String,
     sku: {
       type: String,
-      unique: true
+      unique: true,
     },
     price: String,
     packSize: String,
@@ -48,11 +48,28 @@ const productSchema = new Schema(
     scratchresistant: String,
     supplyPrice: String,
     supplyInstallPrice: String,
+    features: [
+      {
+        title: String,
+        description: String,
+      },
+    ],
     specifications: {
       type: Map,
       of: String,
       default: {},
     },
+    details: {
+      type: Map,
+      of: String,
+    },
+    productTypeLabel: String,
+    jankaRating: String,
+    wearLayerThickness: String,
+    coating: String,
+    fireTested: String,
+    vocCompliance: String,
+    certification: String,
     brochurelink: String,
   },
   { timestamps: true },
